@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+    <script>
+      eruda.init();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="title" content="Umbra MP3" />
+    <meta
+      name="description"
+      content="A fast, customizable, compatible MP3 player"
+    />
+    <title>Umbra Player</title>
+    <link rel="stylesheet" id="themecss" href="/assets/css/index.css" />
+  </head>
+  <body>
+    <h1>Umbra Player</h1>
+    <audio id="audioPlayer" controls></audio>
+    <input type="file" id="fileInput" accept="audio/*" multiple />
+    <div id="home" class="grid"></div>
+    <div id="playlists" class="grid"></div>
+    <div id="controls">
+      <button id="play">Play</button>
+      <button id="pause">Pause</button>
+      <button id="rewind">Rewind</button>
+      <button id="forward">Forward</button>
+      <button id="repeatOne">Repeat One</button>
+      <button id="repeatAll">Repeat All</button>
+      <button id="noRepeat">No Repeat</button>
+      <button id="shuffle">Shuffle Off</button>
+    </div>
+
+    <div id="playlistCreation">
+      <input type="text" id="playlistName" placeholder="Playlist Name" />
+      <input type="file" id="playlistImage" accept="image/*" />
+      <input
+        type="text"
+        id="playlistDescription"
+        placeholder="Playlist Description"
+      />
+      <button id="createPlaylist">Create Playlist</button>
+    </div>
+    <button id="uploadSong">Upload</button>
+
+    <script src="/assets/js/index.js"></script>
+  </body>
+</html>
