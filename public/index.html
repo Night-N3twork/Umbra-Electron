@@ -19,19 +19,27 @@
 
 <body>
   <h1>Umbra Player</h1>
-  <div id="mp3-container"></div>
+  <div id="mp3-container" class="grid"></div>
   <audio id="audioPlayer" controls></audio>
   <input type="file" id="fileInput" accept="audio/*" multiple />
   <div id="player" class="player">
     <div id="controls" class="controls">
-      <button id="play">Play</button>
-      <button id="pause">Pause</button>
-      <button id="rewind">Rewind</button>
-      <button id="forward">Forward</button>
-      <button id="repeatOne">Repeat One</button>
-      <button id="repeatAll">Repeat All</button>
-      <button id="noRepeat">No Repeat</button>
-      <button id="shuffle">Shuffle Off</button>
+      <button id="play">
+      </button>
+      <button id="rewind">
+        <span class="material-symbols-outlined">
+          replay_5
+        </span>
+      </button>
+      <button id="forward">
+        <span class="material-symbols-outlined">
+          forward_5
+        </span>
+      </button>
+      <button id="repeat">
+      </button>
+      <button id="shuffle"></button>
+      </button>
       <div id="songInfo">
         <img id="songImg" />
         <p id="songName"></p>
@@ -41,7 +49,7 @@
       <button id="uploadSong">
         <span class="material-symbols-outlined">
           upload
-          </span>
+        </span>
       </button>
     </div>
   </div>
