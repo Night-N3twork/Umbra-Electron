@@ -4,6 +4,10 @@ const fileInput = document.getElementById('fileInput');
 const playlistsDiv = document.getElementById('playlists');
 const uploadSongButton = document.getElementById('uploadSong');
 
+if (localStorage.getItem("isShuffleOn") === undefined) {
+    localStorage.setItem("isShuffleOn", "false")
+}
+
 async function initializePlayer() {
     // Load audio stores from localForage or initialize empty stores
     let audioStoresPromise = localforage.getItem('audioStores');
@@ -44,16 +48,25 @@ async function renderMP3s() {
                         const mp3Element = document.createElement('div');
                         mp3Element.classList.add('mp3-item');
 
-                        // Create a title element for MP3 name
-                        const titleElement = document.createElement('h3');
-                        titleElement.textContent = mp3.name;
+                        const mp3Image = document.createElement("img");
+                        mp3Image.src = "/assets/imgs/music.png";
+                        mp3Image.style.height = "80px";
+                        mp3Image.style.width = "80px";
 
-                        // Append title to MP3 container
+
+                        const titleElement = document.createElement('h5');
+                        const truncatedName = mp3.name.length > 20 ? mp3.name.substring(0, 20) + '...' : mp3.name;
+                        titleElement.textContent = truncatedName;
+                        titleElement.style.width = "80px";
+                        titleElement.title = mp3.name; 
+
+                        mp3Element.appendChild(mp3Image);
                         mp3Element.appendChild(titleElement);
 
                         mp3Element.onclick = function () {
                             audioPlayer.src = mp3.data;
                             localforage.setItem("lastPlayed", mp3.data);
+                            playSong(mp3)
                         }
 
                         // Append MP3 element to the container
@@ -123,27 +136,27 @@ function downloadSong(mp3) {
 
 // Function to delete a song
 async function deleteSong(storeIndex, mp3Index) {
-  try {
-      // Retrieve audio stores data
-      let audioStores = await localforage.getItem('audioStores');
+    try {
+        // Retrieve audio stores data
+        let audioStores = await localforage.getItem('audioStores');
 
-      // Ensure audioStores is an array
-      if (!Array.isArray(audioStores)) {
-          console.error('Invalid or missing audio stores.');
-          return;
-      }
+        // Ensure audioStores is an array
+        if (!Array.isArray(audioStores)) {
+            console.error('Invalid or missing audio stores.');
+            return;
+        }
 
-      // Remove the specified song from the audio stores
-      audioStores[storeIndex].splice(mp3Index, 1);
+        // Remove the specified song from the audio stores
+        audioStores[storeIndex].splice(mp3Index, 1);
 
-      // Update audio stores in local storage
-      await localforage.setItem('audioStores', audioStores);
+        // Update audio stores in local storage
+        await localforage.setItem('audioStores', audioStores);
 
-      // Re-render MP3s after deletion
-      renderMP3s();
-  } catch (error) {
-      console.error('Error while deleting song:', error);
-  }
+        // Re-render MP3s after deletion
+        renderMP3s();
+    } catch (error) {
+        console.error('Error while deleting song:', error);
+    }
 }
 
 // Function to handle file selection
@@ -188,18 +201,17 @@ function handleFileSelect(event) {
             reader.readAsDataURL(file);
 
             // Grab metadata
-            const audioElement = document.createElement('audio');
-            audioElement.src = URL.createObjectURL(file);
-            audioElement.addEventListener('loadedmetadata', () => {
+            audioPlayer.src = URL.createObjectURL(file);
+            audioPlayer.addEventListener('loadedmetadata', () => {
                 const metadata = {
                     name: file.name,
                     image: '', // You can add image processing logic here
                 };
                 console.log('Metadata:', metadata);
             });
+            renderMP3s()
         }
     }
-    renderMP3s()
 }
 
 // Function to change the store number
@@ -223,6 +235,109 @@ function closeContextMenu() {
     }
 }
 
+const playPauseButton = document.getElementById('play');
+
+function updatePlayPauseState() {
+    if (audioPlayer.paused) {
+        if (audioPlayer.currentTime > 0 && !audioPlayer.ended) {
+            playPauseButton.innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
+        } else {
+            playPauseButton.innerHTML = '<span class="material-symbols-outlined">play_arrow</span>';
+        }
+    } else {
+        playPauseButton.innerHTML = '<span class="material-symbols-outlined">pause</span>';
+    }
+}
+
+playPauseButton.addEventListener('click', () => {
+    if (audioPlayer.paused) {
+        audioPlayer.play();
+    } else {
+        audioPlayer.pause();
+    }
+    updatePlayPauseState();
+});
+
+audioPlayer.addEventListener('play', updatePlayPauseState);
+audioPlayer.addEventListener('pause', updatePlayPauseState);
+audioPlayer.addEventListener('ended', updatePlayPauseState);
+
+// Initialize the button text on page load
+updatePlayPauseState();
+
+document.getElementById('rewind').addEventListener('click', () => audioPlayer.currentTime -= 5);
+document.getElementById('forward').addEventListener('click', () => audioPlayer.currentTime += 5);
+const repeatButton = document.getElementById('repeat');
+// Repeat states
+const repeatStates = ['noRepeat', 'repeatOne', 'repeatAll'];
+let currentRepeatStateIndex = 0; // Default to No Repeat
+
+// Function to update the repeat state
+function updateRepeatState() {
+    const currentState = repeatStates[currentRepeatStateIndex];
+
+    switch (currentState) {
+        case 'noRepeat':
+            audioPlayer.loop = false;
+            audioPlayer.removeEventListener('ended', playNextSong);
+            repeatButton.innerHTML = '<span class="material-symbols-outlined">repeat</span>';
+            break;
+        case 'repeatOne':
+            audioPlayer.loop = true;
+            audioPlayer.addEventListener('ended', () => {
+                audioPlayer.currentTime = 0;
+                audioPlayer.play();
+            });
+            repeatButton.innerHTML = '<span class="material-symbols-outlined">repeat_one_on</span>';
+            break;
+        case 'repeatAll':
+            audioPlayer.loop = false;
+            audioPlayer.addEventListener('ended', playNextSong);
+            repeatButton.innerHTML = '<span class="material-symbols-outlined">repeat_on</span>';
+            break;
+    }
+
+    // Save the current state to localforage
+    localforage.setItem('repeatState', currentRepeatStateIndex);
+}
+
+// Event listener for the repeat button
+repeatButton.addEventListener('click', () => {
+    currentRepeatStateIndex = (currentRepeatStateIndex + 1) % repeatStates.length;
+    updateRepeatState();
+});
+
+// Initialize the repeat state on page load
+async function initializeRepeatState() {
+    const savedStateIndex = await localforage.getItem('repeatState');
+    if (savedStateIndex !== null) {
+        currentRepeatStateIndex = savedStateIndex;
+    }
+    updateRepeatState();
+}
+
+// Call the initialize function on page load
+initializeRepeatState();
+
+const shuffleButton = document.getElementById('shuffle');
+
+// Function to update the shuffle state
+function updateShuffleState() {
+    const isShuffleOn = localStorage.getItem("isShuffleOn") === "true";
+    if (isShuffleOn) {
+        shuffleButton.innerHTML = '<span class="material-symbols-outlined">shuffle_on</span>';
+    } else {
+        shuffleButton.innerHTML = '<span class="material-symbols-outlined">shuffle</span>';
+    }
+}
+
+// Event listener for the shuffle button
+shuffleButton.addEventListener('click', () => {
+    const isShuffleOn = localStorage.getItem("isShuffleOn") === "true";
+    localStorage.setItem("isShuffleOn", !isShuffleOn);
+    updateShuffleState();
+});
+
 function playNextSong() {
     // Get current playlist and song index
     let currentPlaylistIndex = 0;
@@ -241,7 +356,7 @@ function playNextSong() {
     }
 
     // Check if shuffle is enabled
-    const isShuffleOn = false; // Replace with your logic to check if shuffle is enabled
+    const isShuffleOn = localStorage.getItem("isShuffleOn") === "true";
 
     if (isShuffleOn) {
         // Implement shuffle logic to play a random song
@@ -263,31 +378,15 @@ function playNextSong() {
     }
 }
 
-document.getElementById('play').addEventListener('click', () => {
-    audioPlayer.play();
-});
-
-function pauseSong() {
-    audioPlayer.pause();
+// Initialize the shuffle state on page load
+function initializeShuffleState() {
+    if (localStorage.getItem("isShuffleOn") === null) {
+        localStorage.setItem("isShuffleOn", "false");
+    }
+    updateShuffleState();
 }
 
-document.getElementById('pause').addEventListener('click', pauseSong);
-document.getElementById('rewind').addEventListener('click', () => audioPlayer.currentTime -= 5);
-document.getElementById('forward').addEventListener('click', () => audioPlayer.currentTime += 5);
-document.getElementById('repeatOne').addEventListener('click', () => {
-    audioPlayer.loop = true;
-    audioPlayer.addEventListener('ended', () => {
-        audioPlayer.currentTime = 0;
-        audioPlayer.play();
-    });
-});
-document.getElementById('repeatAll').addEventListener('click', () => {
-    audioPlayer.loop = false;
-    audioPlayer.addEventListener('ended', playNextSong);
-});
-document.getElementById('noRepeat').addEventListener('click', () => {
-    audioPlayer.loop = false;
-    audioPlayer.removeEventListener('ended', playNextSong);
-});
+initializeShuffleState();
+
 
 initializePlayer();
