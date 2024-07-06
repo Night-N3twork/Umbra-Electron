@@ -1,4 +1,3 @@
-// JavaScript code goes here
 const audioPlayer = document.getElementById('audioPlayer');
 const fileInput = document.getElementById('fileInput');
 const playlistsDiv = document.getElementById('playlists');
@@ -21,18 +20,21 @@ if ('serviceWorker' in navigator) {
 
 async function download() {
     const urlElement = document.getElementById("downloadUrl");
-  
+    const statusElement = document.getElementById("downloadStatus");
+
     const url = urlElement.value;
     if (!url) {
         console.error("URL is empty");
         return;
     }
-  
+
+    statusElement.textContent = "Downloading";
+
     const req = {
         url,
         isAudioOnly: true
     };
-  
+
     try {
         const response = await fetch(apiUrl, {
             method: "POST",
@@ -42,15 +44,22 @@ async function download() {
                 'Content-Type': 'application/json'
             }
         });
-  
+
         const data = await response.json();
         const downloadUrl = data.url;
         const proxiedUrl = "/api/proxy/" + encodeURIComponent(downloadUrl);
-        console.log(proxiedUrl);
+
         const fetchedUrl = await fetch(proxiedUrl);
         const blob = await fetchedUrl.blob();
 
         const arrayBuffer = await blob.arrayBuffer();
+
+        for (let i = 1; i <= 3; i++) {
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            statusElement.textContent += ".";
+        }
+
+        statusElement.textContent = "Done downloading";
 
         jsmediatags.read(blob, {
             onSuccess: async (tag) => {
@@ -67,11 +76,9 @@ async function download() {
                     reader.readAsDataURL(new Blob([blob], { type: 'audio/mp3' }));
                 });
 
-                // Load audio stores from LocalForage or initialize empty stores
                 let audioStores = await localforage.getItem('audioStores');
                 audioStores = audioStores || Array.from({ length: 45 }, () => []);
 
-                // Find the first available store with less than 10 items
                 let storeFound = false;
                 for (let i = 0; i < audioStores.length; i++) {
                     if (audioStores[i].length < 10) {
@@ -88,9 +95,9 @@ async function download() {
                 if (!storeFound) {
                     console.error('No available store found.');
                 } else {
-                    // Update audio stores in LocalForage
                     await localforage.setItem('audioStores', audioStores);
                 }
+                renderMP3s();
 
                 console.log("Downloaded and saved:", dataUrl);
             },
@@ -100,23 +107,21 @@ async function download() {
         });
     } catch (error) {
         console.error("Error:", error);
+        statusElement.textContent = "Error downloading";
     }
 }
 
 
+
 async function initializePlayer() {
-    // Load audio stores from localForage or initialize empty stores
     let audioStoresPromise = localforage.getItem('audioStores');
 
-    // Wait for the promise to resolve
     let audioStores = await audioStoresPromise;
 
     audioStores = audioStores || Array.from({ length: 45 }, () => []);
 
-    // Update audio stores in localForage
     await localforage.setItem('audioStores', audioStores);
 
-    // Set the last played MP3
     const lastPlayedMP3 = await localforage.getItem("lastPlayed");
     if (lastPlayedMP3) {
         audioPlayer.src = lastPlayedMP3;
@@ -127,12 +132,11 @@ async function initializePlayer() {
 
 function showPageFromHash() {
     let hash = window.location.hash.slice(1);
-    console.log("Original hash:", hash); // Log the original hash
-    // Remove leading '/' if present
+    console.log("Original hash:", hash);
     if (hash.startsWith('/')) {
         hash = hash.slice(1);
     }
-    console.log("Processed hash:", hash); // Log the processed hash
+    console.log("Processed hash:", hash);
     const pages = document.querySelectorAll('.page');
     let pageToShow = document.getElementById('mainPage');
     pages.forEach(page => {
@@ -141,9 +145,9 @@ function showPageFromHash() {
     const targetPage = document.getElementById(hash);
     if (targetPage) {
         pageToShow = targetPage;
-        console.log("Showing page:", targetPage); // Log the target page
+        console.log("Showing page:", targetPage);
     } else {
-        console.log("No page found for hash:", hash); // Log if no page is found
+        console.log("No page found for hash:", hash);
     }
     pageToShow.classList.add('active');
 }
@@ -155,7 +159,7 @@ async function renderMP3s() {
     try {
         const audioStores = await localforage.getItem('audioStores');
         const mp3Container = document.getElementById('mp3-container');
-        mp3Container.innerHTML = ''; // Clear previous content
+        mp3Container.innerHTML = '';
 
         if (!audioStores || !Array.isArray(audioStores)) {
             console.error('Invalid or missing audio stores.');
@@ -170,7 +174,7 @@ async function renderMP3s() {
                         mp3Element.classList.add('mp3-item');
 
                         const mp3Image = document.createElement("img");
-                        mp3Image.src =  mp3.image || "/assets/imgs/music.png";;
+                        mp3Image.src = mp3.image || "/assets/imgs/music.png";;
                         mp3Image.style.height = "80px";
                         mp3Image.style.width = "80px";
 
@@ -190,10 +194,9 @@ async function renderMP3s() {
                             playSong(mp3)
                         }
 
-                        // Append MP3 element to the container
                         mp3Container.appendChild(mp3Element);
 
-                        // Add right-click context menu
+
                         mp3Element.addEventListener('contextmenu', (event) => {
                             event.preventDefault();
                             const menu = document.createElement('div');
@@ -213,7 +216,6 @@ async function renderMP3s() {
                             menu.style.top = `${event.clientY}px`;
                             menu.style.left = `${event.clientX}px`;
                             document.body.appendChild(menu);
-                            // Close menu on click outside
                             document.addEventListener('click', closeContextMenu);
                         });
                     }
@@ -225,7 +227,6 @@ async function renderMP3s() {
     }
 }
 
-// Function to close the context menu
 function closeContextMenu() {
     const menu = document.querySelector('.context-menu');
     if (menu) {
@@ -234,7 +235,6 @@ function closeContextMenu() {
     }
 }
 
-// Function to play a song
 function playSong(mp3) {
     if (!mp3) {
         audioPlayer.src = audioPlayer.src;
@@ -245,7 +245,6 @@ function playSong(mp3) {
     audioPlayer.play();
 }
 
-// Function to download a song
 function downloadSong(mp3) {
     const a = document.createElement('a');
     a.href = mp3.data;
@@ -255,32 +254,25 @@ function downloadSong(mp3) {
     document.body.removeChild(a);
 }
 
-// Function to delete a song
 async function deleteSong(storeIndex, mp3Index) {
     try {
-        // Retrieve audio stores data
         let audioStores = await localforage.getItem('audioStores');
 
-        // Ensure audioStores is an array
         if (!Array.isArray(audioStores)) {
             console.error('Invalid or missing audio stores.');
             return;
         }
 
-        // Remove the specified song from the audio stores
         audioStores[storeIndex].splice(mp3Index, 1);
 
-        // Update audio stores in local storage
         await localforage.setItem('audioStores', audioStores);
 
-        // Re-render MP3s after deletion
         renderMP3s();
     } catch (error) {
         console.error('Error while deleting song:', error);
     }
 }
 
-// Function to handle file selection
 fileInput.addEventListener('change', handleFileSelect);
 uploadSongButton.addEventListener('click', () => fileInput.click());
 
@@ -288,17 +280,16 @@ function handleFileSelect(event) {
     const files = event.target.files;
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        if (file.type.startsWith('audio/')) { // Check if file is an audio file
+        if (file.type.startsWith('audio/')) {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 const arrayBuffer = event.target.result;
 
-                // Read tags from the audio file
                 jsmediatags.read(new Blob([arrayBuffer]), {
                     onSuccess: async (tag) => {
                         const title = tag.tags.title || file.name;
                         const picture = tag.tags.picture;
-                        let imageUrl = '/assets/imgs/music.png'; // Default image if no picture tag found
+                        let imageUrl = '/assets/imgs/music.png';
 
                         if (picture) {
                             const dataUrl = await convertBlobToDataURL(new Blob([picture.data], { type: picture.format }));
@@ -307,11 +298,9 @@ function handleFileSelect(event) {
 
                         const dataUrl = await convertBlobToDataURL(new Blob([arrayBuffer], { type: 'audio/mp3' }));
 
-                        // Load audio stores from localForage or initialize empty stores
                         let audioStores = await localforage.getItem('audioStores');
                         audioStores = audioStores || Array.from({ length: 45 }, () => []);
 
-                        // Find the first available store with less than 10 items
                         let storeFound = false;
                         for (let j = 0; j < audioStores.length; j++) {
                             if (audioStores[j].length < 10) {
@@ -328,7 +317,6 @@ function handleFileSelect(event) {
                         if (!storeFound) {
                             console.error('No available store found.');
                         } else {
-                            // Update audio stores in localForage
                             await localforage.setItem('audioStores', audioStores);
                         }
 
@@ -345,7 +333,6 @@ function handleFileSelect(event) {
     }
 }
 
-// Function to convert Blob to Data URL
 function convertBlobToDataURL(blob) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -357,7 +344,6 @@ function convertBlobToDataURL(blob) {
     });
 }
 
-// Function to change the store number
 function changeStoreNumber(newStoreNumber) {
     if (newStoreNumber > 45) {
         console.error('New store number exceeds maximum limit');
@@ -365,11 +351,9 @@ function changeStoreNumber(newStoreNumber) {
     }
     let audioStores = JSON.parse(localforage.getItem('audioStores'));
     audioStores.length = newStoreNumber;
-    // Update audio stores in localforage
     localforage.setItem('audioStores', JSON.stringify(audioStores));
 }
 
-// Function to close the context menu
 function closeContextMenu() {
     const menu = document.querySelector('.context-menu');
     if (menu) {
@@ -405,17 +389,14 @@ audioPlayer.addEventListener('play', updatePlayPauseState);
 audioPlayer.addEventListener('pause', updatePlayPauseState);
 audioPlayer.addEventListener('ended', updatePlayPauseState);
 
-// Initialize the button text on page load
 updatePlayPauseState();
 
 document.getElementById('rewind').addEventListener('click', () => audioPlayer.currentTime -= 5);
 document.getElementById('forward').addEventListener('click', () => audioPlayer.currentTime += 5);
 const repeatButton = document.getElementById('repeat');
-// Repeat states
 const repeatStates = ['noRepeat', 'repeatOne', 'repeatAll'];
-let currentRepeatStateIndex = 0; // Default to No Repeat
+let currentRepeatStateIndex = 0;
 
-// Function to update the repeat state
 function updateRepeatState() {
     const currentState = repeatStates[currentRepeatStateIndex];
 
@@ -440,17 +421,14 @@ function updateRepeatState() {
             break;
     }
 
-    // Save the current state to localforage
     localforage.setItem('repeatState', currentRepeatStateIndex);
 }
 
-// Event listener for the repeat button
 repeatButton.addEventListener('click', () => {
     currentRepeatStateIndex = (currentRepeatStateIndex + 1) % repeatStates.length;
     updateRepeatState();
 });
 
-// Initialize the repeat state on page load
 async function initializeRepeatState() {
     const savedStateIndex = await localforage.getItem('repeatState');
     if (savedStateIndex !== null) {
@@ -459,12 +437,10 @@ async function initializeRepeatState() {
     updateRepeatState();
 }
 
-// Call the initialize function on page load
 initializeRepeatState();
 
 const shuffleButton = document.getElementById('shuffle');
 
-// Function to update the shuffle state
 function updateShuffleState() {
     const isShuffleOn = localStorage.getItem("isShuffleOn") === "true";
     if (isShuffleOn) {
@@ -474,7 +450,6 @@ function updateShuffleState() {
     }
 }
 
-// Event listener for the shuffle button
 shuffleButton.addEventListener('click', () => {
     const isShuffleOn = localStorage.getItem("isShuffleOn") === "true";
     localStorage.setItem("isShuffleOn", !isShuffleOn);
@@ -482,14 +457,12 @@ shuffleButton.addEventListener('click', () => {
 });
 
 function playNextSong() {
-    // Get current playlist and song index
     let currentPlaylistIndex = 0;
     let currentSongIndex = 0;
     const playlists = JSON.parse(localforage.getItem('playlists'));
     const currentPlaylist = playlists[currentPlaylistIndex];
     if (!currentPlaylist) return;
 
-    // Find the current song index within the playlist
     for (let i = 0; i < playlists.length; i++) {
         if (playlists[i].songs.includes(audioPlayer.src)) {
             currentPlaylistIndex = i;
@@ -498,11 +471,9 @@ function playNextSong() {
         }
     }
 
-    // Check if shuffle is enabled
     const isShuffleOn = localStorage.getItem("isShuffleOn") === "true";
 
     if (isShuffleOn) {
-        // Implement shuffle logic to play a random song
         const randomPlaylistIndex = Math.floor(Math.random() * playlists.length);
         const randomSongIndex = Math.floor(Math.random() * playlists[randomPlaylistIndex].songs.length);
         const randomSong = playlists[randomPlaylistIndex].songs[randomSongIndex];
@@ -515,13 +486,11 @@ function playNextSong() {
             audioPlayer.src = nextSong.data;
             audioPlayer.play();
         } else {
-            // End of playlist, stop playback
             audioPlayer.pause();
         }
     }
 }
 
-// Initialize the shuffle state on page load
 function initializeShuffleState() {
     if (localStorage.getItem("isShuffleOn") === null) {
         localStorage.setItem("isShuffleOn", "false");

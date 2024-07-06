@@ -194,3 +194,7 @@ button:hover {
     border: none;
     border-radius: 5px;
 }
+
+#downloadStatus {
+    color: var(--main-color);
+}
