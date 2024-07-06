@@ -5,15 +5,16 @@ import path from "node:path";
 import { hostname } from "node:os";
 import chalk from "chalk";
 import axios from "axios";
+import { URL, parse } from 'url';
+import contentType from 'content-type';
 
 const server = http.createServer();
-const app = express(server);
-const __dirname = process.cwd();
+const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname + "/public"));
+app.use(express.static(path.join(process.cwd(), "/public")));
 app.use(cors());
 
 app.get("/", (req, res) => {
@@ -39,6 +40,35 @@ app.post("/api/fetch", async (req, res) => {
     }
 });
 
+app.use('/api/proxy/:url(*)', async (req, res) => {
+    const { url } = req.params;
+    let decodedUrl, proxiedUrl;
+    try {
+        decodedUrl = decodeURIComponent(url);
+        proxiedUrl = decodedUrl;
+    } catch (err) {
+        console.error(`Failed to decode or decrypt URL: ${err}`);
+        return res.status(400).send("Invalid URL");
+    }
+
+    try {
+        const assetUrl = new URL(proxiedUrl);
+        const assetResponse = await axios.get(assetUrl.toString(), { responseType: 'arraybuffer' });
+
+        const contentTypeHeader = assetResponse.headers['content-type'];
+        const parsedContentType = contentTypeHeader ? contentType.parse(contentTypeHeader).type : '';
+
+        res.writeHead(assetResponse.status, {
+            "Content-Type": parsedContentType
+        });
+
+        res.end(Buffer.from(assetResponse.data));
+    } catch (err) {
+        console.error(`Failed to fetch proxied URL: ${err}`);
+        res.status(500).send("Failed to fetch proxied URL");
+    }
+});
+
 server.on("request", (req, res) => {
     app(req, res);
 });
@@ -49,8 +79,8 @@ server.on("upgrade", (req, socket, head) => {
 
 server.on("listening", () => {
     const address = server.address();
-    var theme = chalk.hex("#800080");
-    var host = chalk.hex("0d52bd");
+    const theme = chalk.hex("#800080");
+    const host = chalk.hex("0d52bd");
     console.log(chalk.bold(theme(`
 ██╗   ██╗███╗   ███╗██████╗ ██████╗  █████╗ 
 ██║   ██║████╗ ████║██╔══██╗██╔══██╗██╔══██╗
@@ -82,11 +112,18 @@ server.on("listening", () => {
         console.log(`  ${chalk.bold(host("Github Codespaces:"))}           https://${process.env.CODESPACE_NAME}-${address.port === 80 ? "" : address.port}.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`);
     }
 });
+
 server.listen({ port: PORT });
+
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
+
+server.setMaxListeners(0);
+
 function shutdown() {
     console.log("SIGTERM signal received: closing HTTP server");
-    server.close();
-    process.exit(0);
+    server.close(() => {
+        console.log("HTTP server closed");
+        process.exit(1);
+    });
 }

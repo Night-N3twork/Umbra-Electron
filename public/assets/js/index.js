@@ -3,6 +3,7 @@ const audioPlayer = document.getElementById('audioPlayer');
 const fileInput = document.getElementById('fileInput');
 const playlistsDiv = document.getElementById('playlists');
 const uploadSongButton = document.getElementById('uploadSong');
+const apiUrl = localStorage.getItem("apiUrl") || `/api/fetch`;
 
 if (localStorage.getItem("isShuffleOn") === undefined) {
     localStorage.setItem("isShuffleOn", "false")
@@ -33,7 +34,7 @@ async function download() {
     };
   
     try {
-        const response = await fetch(`/api/fetch`, {
+        const response = await fetch(apiUrl, {
             method: "POST",
             body: JSON.stringify(req),
             headers: {
@@ -44,7 +45,9 @@ async function download() {
   
         const data = await response.json();
         const downloadUrl = data.url;
-        const fetchedUrl = await fetch(downloadUrl);
+        const proxiedUrl = "/api/proxy/" + encodeURIComponent(downloadUrl);
+        console.log(proxiedUrl);
+        const fetchedUrl = await fetch(proxiedUrl);
         const blob = await fetchedUrl.blob();
 
         const arrayBuffer = await blob.arrayBuffer();
@@ -122,42 +125,32 @@ async function initializePlayer() {
     renderMP3s();
 }
 
-// Function to get URL parameters
-function getUrlParameter(name) {
-    name = name.replace(/[\[\]]/g, '\\$&');
-    let regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
-    let results = regex.exec(window.location.href);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, ' '));
-  }
-
-  document.addEventListener("DOMContentLoaded", function() {
-    // Get the page parameter from the URL
-    const page = getUrlParameter('page');
-
-    // Hide all pages initially
-    const pages = document.querySelectorAll('.page');
-    pages.forEach(pageElement => {
-      pageElement.style.display = 'none';
-    });
-
-    // Show the page with the matching ID if it exists
-    if (page) {
-      const pageElement = document.getElementById(page);
-      if (pageElement) {
-        pageElement.style.display = 'block';
-      }
-    } else {
-      // Default to showing mainPage if no page parameter is provided
-      const mainPage = document.getElementById('mainPage');
-      if (mainPage) {
-        mainPage.style.display = 'block';
-      }
+function showPageFromHash() {
+    let hash = window.location.hash.slice(1);
+    console.log("Original hash:", hash); // Log the original hash
+    // Remove leading '/' if present
+    if (hash.startsWith('/')) {
+        hash = hash.slice(1);
     }
-  });
+    console.log("Processed hash:", hash); // Log the processed hash
+    const pages = document.querySelectorAll('.page');
+    let pageToShow = document.getElementById('mainPage');
+    pages.forEach(page => {
+        page.classList.remove('active');
+    });
+    const targetPage = document.getElementById(hash);
+    if (targetPage) {
+        pageToShow = targetPage;
+        console.log("Showing page:", targetPage); // Log the target page
+    } else {
+        console.log("No page found for hash:", hash); // Log if no page is found
+    }
+    pageToShow.classList.add('active');
+}
 
-// Function to render MP3s
+window.addEventListener('load', showPageFromHash);
+window.addEventListener('hashchange', showPageFromHash);
+
 async function renderMP3s() {
     try {
         const audioStores = await localforage.getItem('audioStores');

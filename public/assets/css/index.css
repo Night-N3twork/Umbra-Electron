@@ -68,6 +68,10 @@ body::-webkit-scrollbar-thumb {
     display: none;
 }
 
+.page.active {
+    display: block;
+}
+
 #audioPlayer {
     display: none;
 }
