@@ -4,6 +4,7 @@ import cors from "cors";
 import path from "node:path";
 import { hostname } from "node:os";
 import chalk from "chalk";
+import axios from "axios";
 
 const server = http.createServer();
 const app = express(server);
@@ -17,6 +18,25 @@ app.use(cors());
 
 app.get("/", (req, res) => {
     res.sendFile(path.join(process.cwd(), "/public/index.html"));
+});
+
+app.post("/api/fetch", async (req, res) => {
+    try {
+        const response = await axios.post("https://api.cobalt.tools/api/json", req.body, {
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        });
+        res.status(response.status).send(response.data);
+    } catch (error) {
+        console.error(`Error while proxying request: ${error.message}`);
+        if (error.response) {
+            res.status(error.response.status).send(error.response.data);
+        } else {
+            res.status(500).send("Internal Server Error");
+        }
+    }
 });
 
 server.on("request", (req, res) => {
@@ -40,12 +60,12 @@ server.on("listening", () => {
  ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
                                             `)));
 
-    console.log(`  ${chalk.bold(host("Local System:"))}            http://${address.family === "IPv6" ? `[${address.address}]` : addr.address}${address.port === 80 ? "" : ":" + chalk.bold(address.port)}`);
+    console.log(`  ${chalk.bold(host("Local System:"))}            http://${address.family === "IPv6" ? `[${address.address}]` : address.address}${address.port === 80 ? "" : ":" + chalk.bold(address.port)}`);
 
     console.log(`  ${chalk.bold(host("Local System:"))}            http://localhost${address.port === 8080 ? "" : ":" + chalk.bold(address.port)}`);
 
     try {
-        console.log(`  ${chalk.bold(host("On Your Network:"))}  http://${address.ip()}${address.port === 8080 ? "" : ":" + chalk.bold(address.port)}`);
+        console.log(`  ${chalk.bold(host("On Your Network:"))}  http://${hostname()}${address.port === 8080 ? "" : ":" + chalk.bold(address.port)}`);
     } catch (err) {
         // can't find LAN interface
     }
@@ -59,7 +79,7 @@ server.on("listening", () => {
     }
 
     if (process.env.CODESPACE_NAME && process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
-        console.log(`  ${chalk.bold(host("Github Codespaces:"))}           https://${process.env.CODESPACE_NAME}-${address.port === 80 ? "" : "" + address.port}.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`);
+        console.log(`  ${chalk.bold(host("Github Codespaces:"))}           https://${process.env.CODESPACE_NAME}-${address.port === 80 ? "" : address.port}.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`);
     }
 });
 server.listen({ port: PORT });

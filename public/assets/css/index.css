@@ -26,12 +26,47 @@ body::-webkit-scrollbar-thumb {
     will-change: transform;
 }
 
+.navbar {
+    display: flex;
+    position: fixed;
+    z-index: 9999;
+    top: 0px;
+    right: 0;
+    width: 50vw;
+    border: 1px solid var(--main-color);
+    gap: 4px;
+    margin-top: 15px;
+    border-radius: 399px;
+    left: 50%;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    transform: translateX(-50%);
+
+
+}
+
+.navbar a {
+    color: var(--main-color);
+    text-decoration: none;
+    transition: 0.3s ease-in-out;
+    font-size: 24px;
+    margin: 5px;
+}
+.navbar a:hover{
+    scale: 1.3;
+    margin: 10px;
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 10px;
 }
 
+.page {
+    display: none;
+}
 
 #audioPlayer {
     display: none;
@@ -48,7 +83,7 @@ body::-webkit-scrollbar-thumb {
 }
 
 .right-side-bottom-menu {
-    right:0;
+    right: 0;
     position: fixed;
 }
 
@@ -57,7 +92,7 @@ body::-webkit-scrollbar-thumb {
     position: fixed;
     z-index: 9999;
     bottom: 0px;
-    right:0;
+    right: 0;
     width: 100vw;
     border-top: 1px solid var(--main-color);
 }
@@ -82,6 +117,7 @@ body::-webkit-scrollbar-thumb {
     border-radius: 20px;
 
 }
+
 .context-menu div:hover {
     border: 1px solid var(--main-color);
     border-radius: 5px;
@@ -136,3 +172,21 @@ button:hover {
 
 }
 
+#downloadUrl {
+    background-color: var(--base-color);
+    color: var(--main-color);
+    border: none;
+}
+
+#downloadButton {
+    background-color: var(--base-color);
+    color: var(--main-color);
+    border: none;
+}
+
+#downloadButton:hover {
+    background-color: var(--main-color);
+    color: var(--base-color);
+    border: none;
+    border-radius: 5px;
+}

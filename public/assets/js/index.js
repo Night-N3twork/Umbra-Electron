@@ -8,6 +8,99 @@ if (localStorage.getItem("isShuffleOn") === undefined) {
     localStorage.setItem("isShuffleOn", "false")
 }
 
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/offline-sw.js', { scope: '/' }).then(function (registration) {
+            console.log('Service Worker registered with scope:', registration.scope);
+        }).catch(function (error) {
+            console.log('Service Worker registration failed:', error);
+        });
+    });
+}
+
+async function download() {
+    const urlElement = document.getElementById("downloadUrl");
+  
+    const url = urlElement.value;
+    if (!url) {
+        console.error("URL is empty");
+        return;
+    }
+  
+    const req = {
+        url,
+        isAudioOnly: true
+    };
+  
+    try {
+        const response = await fetch(`/api/fetch`, {
+            method: "POST",
+            body: JSON.stringify(req),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+  
+        const data = await response.json();
+        const downloadUrl = data.url;
+        const fetchedUrl = await fetch(downloadUrl);
+        const blob = await fetchedUrl.blob();
+
+        const arrayBuffer = await blob.arrayBuffer();
+
+        jsmediatags.read(blob, {
+            onSuccess: async (tag) => {
+                const title = tag.tags.title || url;
+                const picture = tag.tags.picture;
+                const imageUrl = picture ? URL.createObjectURL(new Blob([new Uint8Array(picture.data)], { type: picture.format })) : '';
+
+                const dataUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        resolve(reader.result.replace(/^data:application\/octet-stream/, 'data:audio/mp3'));
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(new Blob([blob], { type: 'audio/mp3' }));
+                });
+
+                // Load audio stores from LocalForage or initialize empty stores
+                let audioStores = await localforage.getItem('audioStores');
+                audioStores = audioStores || Array.from({ length: 45 }, () => []);
+
+                // Find the first available store with less than 10 items
+                let storeFound = false;
+                for (let i = 0; i < audioStores.length; i++) {
+                    if (audioStores[i].length < 10) {
+                        audioStores[i].push({
+                            name: title,
+                            image: imageUrl,
+                            data: dataUrl
+                        });
+                        storeFound = true;
+                        break;
+                    }
+                }
+
+                if (!storeFound) {
+                    console.error('No available store found.');
+                } else {
+                    // Update audio stores in LocalForage
+                    await localforage.setItem('audioStores', audioStores);
+                }
+
+                console.log("Downloaded and saved:", dataUrl);
+            },
+            onError: (error) => {
+                console.error("Error reading tags:", error);
+            }
+        });
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+
 async function initializePlayer() {
     // Load audio stores from localForage or initialize empty stores
     let audioStoresPromise = localforage.getItem('audioStores');
@@ -29,6 +122,41 @@ async function initializePlayer() {
     renderMP3s();
 }
 
+// Function to get URL parameters
+function getUrlParameter(name) {
+    name = name.replace(/[\[\]]/g, '\\$&');
+    let regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+    let results = regex.exec(window.location.href);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    // Get the page parameter from the URL
+    const page = getUrlParameter('page');
+
+    // Hide all pages initially
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(pageElement => {
+      pageElement.style.display = 'none';
+    });
+
+    // Show the page with the matching ID if it exists
+    if (page) {
+      const pageElement = document.getElementById(page);
+      if (pageElement) {
+        pageElement.style.display = 'block';
+      }
+    } else {
+      // Default to showing mainPage if no page parameter is provided
+      const mainPage = document.getElementById('mainPage');
+      if (mainPage) {
+        mainPage.style.display = 'block';
+      }
+    }
+  });
+
 // Function to render MP3s
 async function renderMP3s() {
     try {
@@ -49,7 +177,7 @@ async function renderMP3s() {
                         mp3Element.classList.add('mp3-item');
 
                         const mp3Image = document.createElement("img");
-                        mp3Image.src = "/assets/imgs/music.png";
+                        mp3Image.src =  mp3.image || "/assets/imgs/music.png";;
                         mp3Image.style.height = "80px";
                         mp3Image.style.width = "80px";
 
@@ -58,7 +186,7 @@ async function renderMP3s() {
                         const truncatedName = mp3.name.length > 20 ? mp3.name.substring(0, 20) + '...' : mp3.name;
                         titleElement.textContent = truncatedName;
                         titleElement.style.width = "80px";
-                        titleElement.title = mp3.name; 
+                        titleElement.title = mp3.name;
 
                         mp3Element.appendChild(mp3Image);
                         mp3Element.appendChild(titleElement);
@@ -169,49 +297,71 @@ function handleFileSelect(event) {
         const file = files[i];
         if (file.type.startsWith('audio/')) { // Check if file is an audio file
             const reader = new FileReader();
-            reader.onload = async function (e) {
-                const audioData = {
-                    name: file.name,
-                    image: '', // You can add image processing logic here
-                    data: e.target.result
-                };
+            reader.onload = async (event) => {
+                const arrayBuffer = event.target.result;
 
-                // Load audio stores from localForage or initialize empty stores
-                let audioStores = await localforage.getItem('audioStores');
-                audioStores = audioStores || Array.from({ length: 45 }, () => []);
+                // Read tags from the audio file
+                jsmediatags.read(new Blob([arrayBuffer]), {
+                    onSuccess: async (tag) => {
+                        const title = tag.tags.title || file.name;
+                        const picture = tag.tags.picture;
+                        let imageUrl = '/assets/imgs/music.png'; // Default image if no picture tag found
 
-                // Add audio data to the first available store
-                let storeFound = false;
-                for (let j = 0; j < audioStores.length; j++) {
-                    if (audioStores[j].length < 10) {
-                        audioStores[j].push(audioData);
-                        storeFound = true;
-                        break;
+                        if (picture) {
+                            const dataUrl = await convertBlobToDataURL(new Blob([picture.data], { type: picture.format }));
+                            imageUrl = dataUrl;
+                        }
+
+                        const dataUrl = await convertBlobToDataURL(new Blob([arrayBuffer], { type: 'audio/mp3' }));
+
+                        // Load audio stores from localForage or initialize empty stores
+                        let audioStores = await localforage.getItem('audioStores');
+                        audioStores = audioStores || Array.from({ length: 45 }, () => []);
+
+                        // Find the first available store with less than 10 items
+                        let storeFound = false;
+                        for (let j = 0; j < audioStores.length; j++) {
+                            if (audioStores[j].length < 10) {
+                                audioStores[j].push({
+                                    name: title,
+                                    image: imageUrl,
+                                    data: dataUrl
+                                });
+                                storeFound = true;
+                                break;
+                            }
+                        }
+
+                        if (!storeFound) {
+                            console.error('No available store found.');
+                        } else {
+                            // Update audio stores in localForage
+                            await localforage.setItem('audioStores', audioStores);
+                        }
+
+                        console.log("Uploaded and saved:", dataUrl);
+                        renderMP3s();
+                    },
+                    onError: (error) => {
+                        console.error("Error reading tags:", error);
                     }
-                }
-
-                if (!storeFound) {
-                    // Handle case when no available store is found
-                    console.error('No available store found.');
-                } else {
-                    // Update audio stores in localForage
-                    await localforage.setItem('audioStores', audioStores);
-                }
+                });
             };
-            reader.readAsDataURL(file);
-
-            // Grab metadata
-            audioPlayer.src = URL.createObjectURL(file);
-            audioPlayer.addEventListener('loadedmetadata', () => {
-                const metadata = {
-                    name: file.name,
-                    image: '', // You can add image processing logic here
-                };
-                console.log('Metadata:', metadata);
-            });
-            renderMP3s()
+            reader.readAsArrayBuffer(file);
         }
     }
+}
+
+// Function to convert Blob to Data URL
+function convertBlobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            resolve(reader.result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
 }
 
 // Function to change the store number
