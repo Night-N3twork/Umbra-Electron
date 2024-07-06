@@ -21,6 +21,7 @@ if ('serviceWorker' in navigator) {
 async function download() {
     const urlElement = document.getElementById("downloadUrl");
     const statusElement = document.getElementById("downloadStatus");
+    let downloading = true;
 
     const url = urlElement.value;
     if (!url) {
@@ -29,6 +30,20 @@ async function download() {
     }
 
     statusElement.textContent = "Downloading";
+
+    // Function to display three dots and clear them
+    async function displayDots() {
+        while (downloading) {
+            for (let i = 1; i <= 3; i++) {
+                statusElement.textContent += ".";
+                await new Promise(resolve => setTimeout(resolve, 500)); // Adjust timing as needed
+            }
+            statusElement.textContent = "Downloading"; // Clear dots
+        }
+    }
+
+    // Start displaying dots
+    displayDots();
 
     const req = {
         url,
@@ -54,12 +69,12 @@ async function download() {
 
         const arrayBuffer = await blob.arrayBuffer();
 
-        for (let i = 1; i <= 3; i++) {
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            statusElement.textContent += ".";
+        downloading = false;
+        if (statusElement.textContent.includes("Downloading")) {
+            setTimeout(() => {
+            statusElement.textContent = "Done downloading";
+            }, 1000);
         }
-
-        statusElement.textContent = "Done downloading";
 
         jsmediatags.read(blob, {
             onSuccess: async (tag) => {
@@ -97,6 +112,7 @@ async function download() {
                 } else {
                     await localforage.setItem('audioStores', audioStores);
                 }
+
                 renderMP3s();
 
                 console.log("Downloaded and saved:", dataUrl);
@@ -110,6 +126,8 @@ async function download() {
         statusElement.textContent = "Error downloading";
     }
 }
+
+
 
 
 
