@@ -72,7 +72,7 @@ async function download() {
         downloading = false;
         if (statusElement.textContent.includes("Downloading")) {
             setTimeout(() => {
-            statusElement.textContent = "Done downloading";
+                statusElement.textContent = "Done downloading";
             }, 1000);
         }
 
@@ -294,7 +294,7 @@ async function deleteSong(storeIndex, mp3Index) {
 fileInput.addEventListener('change', handleFileSelect);
 uploadSongButton.addEventListener('click', () => fileInput.click());
 
-function handleFileSelect(event) {
+async function handleFileSelect(event) {
     const files = event.target.files;
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -307,11 +307,15 @@ function handleFileSelect(event) {
                     onSuccess: async (tag) => {
                         const title = tag.tags.title || file.name;
                         const picture = tag.tags.picture;
-                        let imageUrl = '/assets/imgs/music.png';
 
+                        let imageUrl = '/assets/imgs/music.png';
                         if (picture) {
-                            const dataUrl = await convertBlobToDataURL(new Blob([picture.data], { type: picture.format }));
-                            imageUrl = dataUrl;
+                            try {
+                                imageUrl = await convertBlobToDataURL(new Blob([picture.data], { type: picture.format }));
+                                console.log('Converted Image URL:', imageUrl);
+                            } catch (error) {
+                                console.error('Error converting image to data URL:', error);
+                            }
                         }
 
                         const dataUrl = await convertBlobToDataURL(new Blob([arrayBuffer], { type: 'audio/mp3' }));
