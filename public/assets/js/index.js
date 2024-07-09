@@ -127,10 +127,6 @@ async function download() {
     }
 }
 
-
-
-
-
 async function initializePlayer() {
     let audioStoresPromise = localforage.getItem('audioStores');
 
@@ -266,7 +262,11 @@ function playSong(mp3) {
 function downloadSong(mp3) {
     const a = document.createElement('a');
     a.href = mp3.data;
-    a.download = mp3.name;
+    let downloadName = mp3.name
+    if (!downloadName.endsWith('.mp3')) {
+        downloadName += '.mp3';
+    }
+    a.download = downloadName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -407,14 +407,26 @@ playPauseButton.addEventListener('click', () => {
     updatePlayPauseState();
 });
 
+function rewind() {
+    audioPlayer.currentTime -= getRewindForwardAmount();
+}
+
+function forward() {
+    audioPlayer.currentTime += getRewindForwardAmount();
+}
+
+function getRewindForwardAmount() {
+    return parseInt(document.getElementById('rewindForwardDropdown').value, 10);
+}
+
 audioPlayer.addEventListener('play', updatePlayPauseState);
 audioPlayer.addEventListener('pause', updatePlayPauseState);
 audioPlayer.addEventListener('ended', updatePlayPauseState);
 
 updatePlayPauseState();
 
-document.getElementById('rewind').addEventListener('click', () => audioPlayer.currentTime -= 5);
-document.getElementById('forward').addEventListener('click', () => audioPlayer.currentTime += 5);
+document.getElementById('rewind').addEventListener('click', rewind);
+document.getElementById('forward').addEventListener('click', forward);
 const repeatButton = document.getElementById('repeat');
 const repeatStates = ['noRepeat', 'repeatOne', 'repeatAll'];
 let currentRepeatStateIndex = 0;
@@ -524,3 +536,57 @@ initializeShuffleState();
 
 
 initializePlayer();
+
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const rewindForwardDropdown = document.getElementById('rewindForwardDropdown');
+    const savedValue = localStorage.getItem('rewindForwardAmount') || '10';
+    rewindForwardDropdown.value = savedValue;
+    document.getElementById('rewind').innerHTML = `
+    <span class="material-symbols-outlined">
+        replay_${savedValue}
+    </span>`
+    document.getElementById('forward').innerHTML = `
+    <span class="material-symbols-outlined">
+        forward_${savedValue}
+    </span>`;
+
+    rewindForwardDropdown.addEventListener('change', (event) => {
+        const selectedValue = event.target.value;
+        localStorage.setItem('rewindForwardAmount', selectedValue);
+        location.reload();
+    });
+});
+
+
+document.addEventListener('keydown', function (event) {
+    switch (event.code) {
+        case 'ArrowLeft':
+            rewind();
+            break;
+        case 'ArrowRight':
+            forward();
+            break;
+        case 'Space':
+            event.preventDefault();
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+            } else {
+                audioPlayer.pause();
+            }
+            updatePlayPauseState();
+            break;
+        case 'KeyR':
+            currentRepeatStateIndex = (currentRepeatStateIndex + 1) % repeatStates.length;
+            updateRepeatState();
+            break;
+        case 'KeyS':
+            const isShuffleOn = localStorage.getItem("isShuffleOn") === "true";
+            localStorage.setItem("isShuffleOn", !isShuffleOn);
+            updateShuffleState();
+            break;
+        case 'KeyU':
+            fileInput.click();
+            break;
+    }
+});

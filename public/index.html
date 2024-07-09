@@ -48,52 +48,65 @@
         <h2>Api URL</h2>
         <p>Set the URL to the API to use for downloading songs with Cobalt.</p>
         <div class="flexdiv">
-          <input type="url" id="apiUrl" /> <button id="saveApiUrl" class="savebutton">Save</button>
+          <input class="inputurl" type="url" id="apiUrl" /> <button id="saveApiUrl" class="savebutton">Save</button>
         </div>
       </div>
-    </div>
-    </div>
-    <div id="downloadPage" class="page">
-      <h1>Download</h1>
-      <input type="url" id="downloadUrl" placeholder="URL to download" />
-      <button id="downloadButton" onclick="download()">Download</button>
+      <div class="setting">
+        <h2>Rewind Forward switch</h2>
+        <p>Switch the timings for The Rewind and Forward!</p>
+        <select class="dropdown" id="rewindForwardDropdown">
+          <option value="5">5 seconds</option>
+          <option value="10">10 seconds</option>
+          <option value="30">30 seconds</option>
+        </select>
+      </div>
+      <div class="setting">
 
-      <div id="downloadStatus"></div>
-    </div>
-    <audio id="audioPlayer" controls></audio>
-    <input type="file" id="fileInput" multiple />
-    <div id="player" class="player">
-      <div id="controls" class="controls">
-        <button id="play">
-        </button>
-        <button id="rewind">
-          <span class="material-symbols-outlined">
-            replay_5
-          </span>
-        </button>
-        <button id="forward">
-          <span class="material-symbols-outlined">
-            forward_5
-          </span>
-        </button>
-        <button id="repeat">
-        </button>
-        <button id="shuffle"></button>
-        </button>
-        <div id="songInfo">
-          <img id="songImg" />
-          <p id="songName"></p>
-        </div>
-      </div>
-      <div class="right-side-bottom-menu">
-        <button id="uploadSong">
-          <span class="material-symbols-outlined">
-            upload
-          </span>
-        </button>
       </div>
     </div>
-    <script src="/assets/js/index.js"></script>
+  </div>
+  <div id="downloadPage" class="page">
+    <h1>Download</h1>
+    <input type="url" id="downloadUrl" placeholder="URL to download" />
+    <button id="downloadButton" onclick="download()">Download</button>
+
+    <div id="downloadStatus"></div>
+  </div>
+
+  <audio id="audioPlayer" controls></audio>
+  <input type="file" id="fileInput" multiple />
+  <div id="player" class="player">
+    <div id="controls" class="controls">
+      <button id="play">
+      </button>
+      <button id="rewind">
+        <span class="material-symbols-outlined">
+          replay_5
+        </span>
+      </button>
+      <button id="forward">
+        <span class="material-symbols-outlined">
+          forward_5
+        </span>
+      </button>
+      <button id="repeat">
+      </button>
+      <button id="shuffle"></button>
+      </button>
+      <div id="songInfo">
+        <img id="songImg" />
+        <p id="songName"></p>
+      </div>
+    </div>
+    <div class="right-side-bottom-menu">
+      <button id="uploadSong">
+        <span class="material-symbols-outlined">
+          upload
+        </span>
+      </button>
+    </div>
+  </div>
+  <script src="/assets/js/index.js"></script>
 </body>
 
 </html>
