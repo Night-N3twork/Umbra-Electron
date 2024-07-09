@@ -3,6 +3,11 @@ const fileInput = document.getElementById('fileInput');
 const playlistsDiv = document.getElementById('playlists');
 const uploadSongButton = document.getElementById('uploadSong');
 const apiUrl = localStorage.getItem("apiUrl") || `/api/fetch`;
+let proxyUrl = localStorage.getItem("proxyUrl") || `/api/proxy/`;
+if (!proxyUrl.endsWith('/')) {
+    proxyUrl += '/';
+  }
+
 
 if (localStorage.getItem("isShuffleOn") === undefined) {
     localStorage.setItem("isShuffleOn", "false")
@@ -62,7 +67,7 @@ async function download() {
 
         const data = await response.json();
         const downloadUrl = data.url;
-        const proxiedUrl = "/api/proxy/" + encodeURIComponent(downloadUrl);
+        const proxiedUrl = proxyUrl + encodeURIComponent(downloadUrl);
 
         const fetchedUrl = await fetch(proxiedUrl);
         const blob = await fetchedUrl.blob();
@@ -590,3 +595,86 @@ document.addEventListener('keydown', function (event) {
             break;
     }
 });
+
+const colorPicker = document.getElementById("primaryColor");
+colorPicker.addEventListener("input", function () {
+    document.documentElement.style.setProperty("--main-color", colorPicker.value);
+    localStorage.setItem("mainColor", colorPicker.value);
+});
+
+const savedColor = localStorage.getItem("mainColor");
+if (savedColor) {
+    document.documentElement.style.setProperty("--main-color", savedColor);
+    colorPicker.value = savedColor;
+}
+
+const colorPicker2 = document.getElementById("secondaryColor");
+colorPicker2.addEventListener("input", function () {
+    document.documentElement.style.setProperty("--base-color", colorPicker2.value);
+    localStorage.setItem("baseColor", colorPicker2.value);
+});
+
+const savedColor2 = localStorage.getItem("baseColor");
+if (savedColor2) {
+    document.documentElement.style.setProperty("--base-color", savedColor2);
+    colorPicker2.value = savedColor2;
+}
+
+const saveButton = document.getElementById("saveColors");
+const resetButton = document.getElementById("resetColors");
+
+saveButton.addEventListener("click", function () {
+    const mainColor = colorPicker.value;
+    const baseColor = colorPicker2.value;
+
+    localStorage.setItem("mainColor", mainColor);
+    localStorage.setItem("baseColor", baseColor);
+
+    location.reload();
+});
+
+resetButton.addEventListener("click", function () {
+    localStorage.removeItem("mainColor");
+    localStorage.removeItem("baseColor");
+
+    document.documentElement.style.setProperty("--main-color", "#8000FF");
+    document.documentElement.style.setProperty("--base-color", "#212121");
+    location.reload();
+});
+
+window.addEventListener("load", function () {
+
+    const savedColor = localStorage.getItem("mainColor");
+    if (savedColor) {
+        document.documentElement.style.setProperty("--main-color", savedColor);
+    }
+
+    const savedColor2 = localStorage.getItem("baseColor");
+    if (savedColor2) {
+        document.documentElement.style.setProperty("--base-color", savedColor2);
+    }
+
+});
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    var savedApiUrl = localStorage.getItem('apiUrl');
+    var savedProxyUrl = localStorage.getItem('proxyUrl');
+    
+    if (savedApiUrl) {
+      document.getElementById('apiUrl').value = savedApiUrl;
+    }
+    if (savedProxyUrl) {
+      document.getElementById('proxyUrl').value = savedProxyUrl;
+    }
+    
+    document.getElementById('saveApiUrl').addEventListener('click', function() {
+      var apiUrl = document.getElementById('apiUrl').value;
+      var proxyUrl = document.getElementById('proxyUrl').value;
+      
+      localStorage.setItem('apiUrl', apiUrl);
+      localStorage.setItem('proxyUrl', proxyUrl);
+      
+      alert('Settings saved!');
+    });
+  });

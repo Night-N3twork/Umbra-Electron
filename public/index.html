@@ -23,9 +23,11 @@
 
 <body>
   <div class="navbar">
-    <a href="/#/" class="nav-link fa-solid fa-house" id="mainPageLink"></a>
-    <a href="/#/downloadPage" class="nav-link fa-solid fa-download" id="downloadPageLink"></a>
-    <a href="/#/settingsPage" class="nav-link fa-solid fa-gear" id="settingsPageLink"></a>
+    <div class="naventries">
+      <a href="/#/" class="nav-link fa-solid fa-house" style="margin-right:-5px" id="mainPageLink"></a>
+      <a href="/#/downloadPage" class="nav-link fa-solid fa-download" id="downloadPageLink"></a>
+      <a href="/#/settingsPage" style="margin-left:-5px;" class="nav-link fa-solid fa-gear" id="settingsPageLink"></a>
+    </div>
   </div>
   <div id="mainPage" class="page">
     <h1>Umbra Player</h1>
@@ -47,8 +49,9 @@
       <div class="setting">
         <h2>Api URL</h2>
         <p>Set the URL to the API to use for downloading songs with Cobalt.</p>
+        <p>if you deploy a <a href="https://github.com/Night-N3twork/Umbra-Fetch-Server" style="text-decoration: none ;color: var(--main-color);">Umbra Fetch Server,</a> you can use that (url)/api/fetch and (url)/api/proxy for the urls.</p>
         <div class="flexdiv">
-          <input class="inputurl" type="url" id="apiUrl" /> <button id="saveApiUrl" class="savebutton">Save</button>
+          <input class="inputurl" type="url" id="apiUrl" placeholder="(url)/api/fetch or cobalt api url"/><input class="inputurl" type="url" id="proxyUrl" placeholder="(url)/api/proxy"/> <button id="saveApiUrl" class="savebutton">Save</button>
         </div>
       </div>
       <div class="setting">
@@ -59,9 +62,6 @@
           <option value="10">10 seconds</option>
           <option value="30">30 seconds</option>
         </select>
-      </div>
-      <div class="setting">
-
       </div>
     </div>
   </div>
@@ -80,14 +80,8 @@
       <button id="play">
       </button>
       <button id="rewind">
-        <span class="material-symbols-outlined">
-          replay_5
-        </span>
       </button>
       <button id="forward">
-        <span class="material-symbols-outlined">
-          forward_5
-        </span>
       </button>
       <button id="repeat">
       </button>
