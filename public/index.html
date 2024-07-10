@@ -49,9 +49,13 @@
       <div class="setting">
         <h2>Api URL</h2>
         <p>Set the URL to the API to use for downloading songs with Cobalt.</p>
-        <p>if you deploy a <a href="https://github.com/Night-N3twork/Umbra-Fetch-Server" style="text-decoration: none ;color: var(--main-color);">Umbra Fetch Server,</a> you can use that (url)/api/fetch and (url)/api/proxy for the urls.</p>
+        <p>if you deploy a <a href="https://github.com/Night-N3twork/Umbra-Fetch-Server"
+            style="text-decoration: none ;color: var(--main-color);">Umbra Fetch Server,</a> you can use that
+          (url)/api/fetch and (url)/api/proxy for the urls.</p>
         <div class="flexdiv">
-          <input class="inputurl" type="url" id="apiUrl" placeholder="(url)/api/fetch or cobalt api url"/><input class="inputurl" type="url" id="proxyUrl" placeholder="(url)/api/proxy"/> <button id="saveApiUrl" class="savebutton">Save</button>
+          <input class="inputurl" type="url" id="apiUrl" placeholder="(url)/api/fetch or cobalt api url" /><input
+            class="inputurl" type="url" id="proxyUrl" placeholder="(url)/api/proxy" /> <button id="saveApiUrl"
+            class="savebutton">Save</button>
         </div>
       </div>
       <div class="setting">
@@ -88,17 +92,23 @@
       <button id="shuffle"></button>
       </button>
       <div id="songInfo">
-        <img id="songImg" />
+        <img id="songImg" style="height: 32px;width: 32px;border-radius: 5px;"/>
         <p id="songName"></p>
       </div>
+      <div class="progress-container" id="progress-container" style="margin-top: 12px;">
+        <div class="progress" id="progress"></div>
+      </div>
+      <div class="time" style="margin-top: 9px;">
+        <span id="current-time">0:00</span> / <span id="duration">0:00</span>
+      </div>
     </div>
-    <div class="right-side-bottom-menu">
-      <button id="uploadSong">
-        <span class="material-symbols-outlined">
-          upload
-        </span>
-      </button>
-    </div>
+  <div class="right-side-bottom-menu">
+    <button id="uploadSong">
+      <span class="material-symbols-outlined">
+        upload
+      </span>
+    </button>
+  </div>
   </div>
   <script src="/assets/js/index.js"></script>
 </body>

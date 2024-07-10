@@ -2,11 +2,15 @@ const audioPlayer = document.getElementById('audioPlayer');
 const fileInput = document.getElementById('fileInput');
 const playlistsDiv = document.getElementById('playlists');
 const uploadSongButton = document.getElementById('uploadSong');
+const progressContainer = document.getElementById('progress-container');
+const progress = document.getElementById('progress');
+const currentTimeElem = document.getElementById('current-time');
+const durationElem = document.getElementById('duration');
 const apiUrl = localStorage.getItem("apiUrl") || `/api/fetch`;
 let proxyUrl = localStorage.getItem("proxyUrl") || `/api/proxy/`;
 if (!proxyUrl.endsWith('/')) {
     proxyUrl += '/';
-  }
+}
 
 
 if (localStorage.getItem("isShuffleOn") === undefined) {
@@ -142,9 +146,13 @@ async function initializePlayer() {
     await localforage.setItem('audioStores', audioStores);
 
     const lastPlayedMP3 = await localforage.getItem("lastPlayed");
-    if (lastPlayedMP3) {
-        audioPlayer.src = lastPlayedMP3;
-    }
+    const lastPlayedImg = await localforage.getItem("lastPlayedImg");
+    const lastPlayedName = await localforage.getItem("lastPlayedName");
+    audioPlayer.src = lastPlayedMP3;
+    document.getElementById('songImg').src = lastPlayedImg || "/assets/imgs/music.png";
+    let songName = lastPlayedName.length > 10 ? lastPlayedName.substring(0, 10) + '...' : lastPlayedName;
+    document.getElementById('songName').textContent = songName;
+    document.getElementById('songName').title = lastPlayedName;
 
     renderMP3s();
 }
@@ -210,6 +218,8 @@ async function renderMP3s() {
                         mp3Element.onclick = function () {
                             audioPlayer.src = mp3.data;
                             localforage.setItem("lastPlayed", mp3.data);
+                            localforage.setItem("lastPlayedImg", mp3.image);
+                            localforage.setItem("lastPlayedName", mp3.name);
                             playSong(mp3)
                         }
 
@@ -260,6 +270,15 @@ function playSong(mp3) {
     } else {
         audioPlayer.src = mp3.data;
         localforage.setItem("lastPlayed", mp3.data);
+        localforage.setItem("lastPlayedImg", mp3.image);
+        localforage.setItem("lastPlayedName", mp3.name);
+
+        const songImg = document.getElementById('songImg');
+        const songName = document.getElementById('songName');
+
+        songImg.src = mp3.image || '/assets/imgs/music.png';
+        const tempSongName = mp3.name.length > 10 ? mp3.name.substring(0, 10) + '...' : mp3.name;
+        songName.textContent = tempSongName || 'Unknown Song';
     }
     audioPlayer.play();
 }
@@ -495,6 +514,63 @@ shuffleButton.addEventListener('click', () => {
     updateShuffleState();
 });
 
+
+audioPlayer.addEventListener('timeupdate', updateProgress);
+progressContainer.addEventListener('click', setProgress);
+progressContainer.addEventListener('mousedown', enableDrag);
+audioPlayer.addEventListener('loadedmetadata', () => {
+    durationElem.textContent = formatTime(audioPlayer.duration);
+});
+
+function updateProgress() {
+    const { currentTime, duration } = audioPlayer;
+    const progressPercent = (currentTime / duration) * 100;
+    progress.style.width = `${progressPercent}%`;
+    currentTimeElem.textContent = formatTime(currentTime);
+}
+
+function setProgress(e) {
+    const width = progressContainer.clientWidth;
+    const clickX = e.offsetX;
+    const duration = audioPlayer.duration;
+
+    audioPlayer.currentTime = (clickX / width) * duration;
+}
+
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
+let isDragging = false;
+
+function enableDrag() {
+    isDragging = true;
+    document.addEventListener('mousemove', handleDrag);
+    document.addEventListener('mouseup', disableDrag);
+}
+
+function handleDrag(e) {
+    if (isDragging) {
+        const rect = progressContainer.getBoundingClientRect();
+        const width = rect.width;
+        const offsetX = e.clientX - rect.left;
+
+        if (offsetX >= 0 && offsetX <= width) {
+            const duration = audioPlayer.duration;
+            audioPlayer.currentTime = (offsetX / width) * duration;
+            updateProgress();
+        }
+    }
+}
+
+function disableDrag() {
+    isDragging = false;
+    document.removeEventListener('mousemove', handleDrag);
+    document.removeEventListener('mouseup', disableDrag);
+}
+
 function playNextSong() {
     let currentPlaylistIndex = 0;
     let currentSongIndex = 0;
@@ -657,24 +733,24 @@ window.addEventListener("load", function () {
 });
 
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     var savedApiUrl = localStorage.getItem('apiUrl');
     var savedProxyUrl = localStorage.getItem('proxyUrl');
-    
+
     if (savedApiUrl) {
-      document.getElementById('apiUrl').value = savedApiUrl;
+        document.getElementById('apiUrl').value = savedApiUrl;
     }
     if (savedProxyUrl) {
-      document.getElementById('proxyUrl').value = savedProxyUrl;
+        document.getElementById('proxyUrl').value = savedProxyUrl;
     }
-    
-    document.getElementById('saveApiUrl').addEventListener('click', function() {
-      var apiUrl = document.getElementById('apiUrl').value;
-      var proxyUrl = document.getElementById('proxyUrl').value;
-      
-      localStorage.setItem('apiUrl', apiUrl);
-      localStorage.setItem('proxyUrl', proxyUrl);
-      
-      alert('Settings saved!');
+
+    document.getElementById('saveApiUrl').addEventListener('click', function () {
+        var apiUrl = document.getElementById('apiUrl').value;
+        var proxyUrl = document.getElementById('proxyUrl').value;
+
+        localStorage.setItem('apiUrl', apiUrl);
+        localStorage.setItem('proxyUrl', proxyUrl);
+
+        alert('Settings saved!');
     });
-  });
+});
