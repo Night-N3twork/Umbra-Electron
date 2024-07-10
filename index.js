@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from "electron";
 import server from "./src/server.js";
+import DiscordRPC from 'discord-rpc';
 
 // Start the server
 server.start();
@@ -43,3 +44,40 @@ app.on("activate", function () {
     createWindow();
   }
 });
+
+const clientId = '1260399266510405745';
+
+// Only needed if you want to use spectate, join, or ask to join
+DiscordRPC.register(clientId);
+
+const rpc = new DiscordRPC.Client({ transport: 'ipc' });
+const startTimestamp = new Date();
+
+async function setActivity() {
+  if (!rpc || !mainWindow) {
+    return;
+  }
+
+  // You'll need to have snek_large and snek_small assets uploaded to
+  // https://discord.com/developers/applications/<application_id>/rich-presence/assets
+  rpc.setActivity({
+    details: `Vibing to Music`,
+    state: 'Listening to Music',
+    startTimestamp,
+    largeImageKey: 'index',
+    largeImageText: 'Umbra',
+    smallImageText: 'Umbra',
+    instance: false,
+  });
+}
+
+rpc.on('ready', () => {
+  setActivity();
+
+  // activity can only be set every 15 seconds
+  setInterval(() => {
+    setActivity();
+  }, 15e3);
+});
+
+rpc.login({ clientId }).catch(console.error);
